@@ -1,6 +1,7 @@
 {
   "name": "polling-app",
   "version": "0.1.0",
+  "author": "Lawrence Ikhidero",
   "private": true,
   "scripts": {
     "dev": "next dev",

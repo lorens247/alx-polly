@@ -43,17 +43,42 @@ export function PollCard({ poll, onVote, canVote = true }: PollCardProps) {
     return Math.round((votes / poll.totalVotes) * 100)
   }
 
+  const getStatusColor = () => {
+    if (!poll.isActive) return "bg-red-100 text-red-800 border-red-200"
+    if (poll.expiresAt && new Date(poll.expiresAt) < new Date()) {
+      return "bg-yellow-100 text-yellow-800 border-yellow-200"
+    }
+    return "bg-green-100 text-green-800 border-green-200"
+  }
+
+  const getStatusText = () => {
+    if (!poll.isActive) return "Closed"
+    if (poll.expiresAt && new Date(poll.expiresAt) < new Date()) {
+      return "Expired"
+    }
+    return "Active"
+  }
+
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-xl">{poll.title}</CardTitle>
-            <CardDescription>{poll.description}</CardDescription>
+    <Card className="card-hover card-gradient h-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 pr-4">
+            <CardTitle className="text-xl text-gray-900 mb-2 line-clamp-2">
+              {poll.title}
+            </CardTitle>
+            <CardDescription className="text-gray-600 line-clamp-2">
+              {poll.description}
+            </CardDescription>
           </div>
-          <div className="text-right text-sm text-muted-foreground">
-            <div>{poll.totalVotes} votes</div>
-            <div>{poll.isActive ? "Active" : "Closed"}</div>
+          <div className="flex flex-col items-end space-y-2">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor()}`}>
+              {getStatusText()}
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600">{poll.totalVotes}</div>
+              <div className="text-sm text-gray-500">votes</div>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -75,23 +100,29 @@ export function PollCard({ poll, onVote, canVote = true }: PollCardProps) {
                     checked={isSelected}
                     onChange={(e) => setSelectedOption(e.target.value)}
                     disabled={!canVote || hasVoted}
-                    className="w-4 h-4"
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
                   />
                   <label 
                     htmlFor={option.id} 
-                    className="flex-1 text-sm font-medium cursor-pointer"
+                    className={`flex-1 text-sm font-medium cursor-pointer transition-colors ${
+                      isSelected ? 'text-blue-700' : 'text-gray-700'
+                    }`}
                   >
                     {option.text}
                   </label>
-                  <span className="text-sm text-muted-foreground">
-                    {option.votes} votes ({percentage}%)
+                  <span className="text-sm font-semibold text-gray-600 min-w-[80px] text-right">
+                    {option.votes} ({percentage}%)
                   </span>
                 </div>
                 
-                {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                {/* Enhanced Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    className={`h-3 rounded-full transition-all duration-500 ease-out ${
+                      percentage > 50 ? 'bg-green-500' : 
+                      percentage > 25 ? 'bg-blue-500' : 
+                      percentage > 10 ? 'bg-yellow-500' : 'bg-gray-400'
+                    }`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -101,29 +132,48 @@ export function PollCard({ poll, onVote, canVote = true }: PollCardProps) {
         </div>
       </CardContent>
       
-      <CardFooter className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          Created {new Date(poll.createdAt).toLocaleDateString()}
+      <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0 pt-4">
+        <div className="text-sm text-gray-500 space-y-1">
+          <div>Created {new Date(poll.createdAt).toLocaleDateString()}</div>
           {poll.expiresAt && (
-            <span> • Expires {new Date(poll.expiresAt).toLocaleDateString()}</span>
+            <div className="text-orange-600">
+              Expires {new Date(poll.expiresAt).toLocaleDateString()}
+            </div>
           )}
         </div>
         
-        {canVote && !hasVoted && (
+        <div className="flex space-x-2">
+          {canVote && !hasVoted && (
+            <Button 
+              onClick={handleVote}
+              disabled={!selectedOption}
+              className={`${
+                selectedOption 
+                  ? 'btn-success' 
+                  : 'btn-secondary opacity-50 cursor-not-allowed'
+              }`}
+              size="sm"
+            >
+              {selectedOption ? '🗳️ Vote Now' : 'Select Option'}
+            </Button>
+          )}
+          
+          {hasVoted && (
+            <div className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
+              <span className="text-lg">✓</span>
+              <span className="text-sm font-medium">Voted</span>
+            </div>
+          )}
+          
           <Button 
-            onClick={handleVote}
-            disabled={!selectedOption}
+            variant="outline" 
             size="sm"
+            className="btn-outline"
+            asChild
           >
-            Vote
+            <a href={`/polls/${poll.id}`}>View Details</a>
           </Button>
-        )}
-        
-        {hasVoted && (
-          <span className="text-sm text-green-600 font-medium">
-            ✓ Voted
-          </span>
-        )}
+        </div>
       </CardFooter>
     </Card>
   )
