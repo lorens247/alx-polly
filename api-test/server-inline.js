@@ -10,8 +10,16 @@ app.use(express.json());
 
 // In-memory storage for items
 let items = [
-  { id: 1, name: 'Sample Item 1', description: 'This is a sample item' },
-  { id: 2, name: 'Sample Item 2', description: 'Another sample item' }
+  { id: 1, name: 'Item 1', description: 'This is a sample item 1' },
+  { id: 2, name: 'Item 2', description: 'This is a sample item 2' },
+  { id: 3, name: 'Item 3', description: 'This is a sample item 3' },
+  { id: 4, name: 'Item 4', description: 'This is a sample item 4' },
+  { id: 5, name: 'Item 5', description: 'This is a sample item 5' },
+  { id: 6, name: 'Item 6', description: 'This is a sample item 6' },
+  { id: 7, name: 'Item 7', description: 'This is a sample item 7' },
+  { id: 8, name: 'Item 8', description: 'This is a sample item 8' },
+  { id: 9, name: 'Item 9', description: 'This is a sample item 9' },
+  { id: 10, name: 'Item 10', description: 'This is a sample item 10' }
 ];
 
 // GET /items - Retrieve all items

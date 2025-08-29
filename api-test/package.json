@@ -14,6 +14,6 @@
     "cors": "^2.8.5"
   },
   "keywords": ["rest-api", "express", "nodejs"],
-  "author": "",
+  "author": "Lawrence Ikhidero",
   "license": "ISC"
 }
