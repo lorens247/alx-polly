@@ -72,26 +72,37 @@ export default function PollsPage() {
   const [filter, setFilter] = useState("all") // all, active, closed
 
   const handleVote = async (pollId: string, optionId: string) => {
-    // TODO: Implement voting logic
     console.log(`Voting for option ${optionId} in poll ${pollId}`)
     
-    // Mock vote update
-    setPolls(prevPolls => 
-      prevPolls.map(poll => {
-        if (poll.id === pollId) {
-          return {
-            ...poll,
-            options: poll.options.map(option => 
-              option.id === optionId 
-                ? { ...option, votes: option.votes + 1 }
-                : option
-            ),
-            totalVotes: poll.totalVotes + 1
-          }
-        }
-        return poll
-      })
-    )
+    // Optimized vote update with better performance and readability
+    setPolls(prevPolls => {
+      // Early validation - return unchanged if poll/option not found
+      const pollIndex = prevPolls.findIndex(poll => poll.id === pollId)
+      if (pollIndex === -1) return prevPolls
+      
+      const poll = prevPolls[pollIndex]
+      const optionIndex = poll.options.findIndex(option => option.id === optionId)
+      if (optionIndex === -1) return prevPolls
+      
+      // Create immutable update with minimal object creation
+      const newPolls = [...prevPolls]
+      const newOptions = [...poll.options]
+      
+      // Update only the specific option that was voted for
+      newOptions[optionIndex] = { 
+        ...newOptions[optionIndex], 
+        votes: newOptions[optionIndex].votes + 1 
+      }
+      
+      // Update only the specific poll that was voted on
+      newPolls[pollIndex] = {
+        ...poll,
+        options: newOptions,
+        totalVotes: poll.totalVotes + 1
+      }
+      
+      return newPolls
+    })
   }
 
   const filteredPolls = polls.filter(poll => {
