@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -17,9 +17,27 @@ interface UserMenuProps {
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <Button
         variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
@@ -32,7 +50,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
       </Button>
 
       {isOpen && (
-        <Card className="absolute right-0 top-12 w-64 z-50">
+        <Card className="absolute right-0 top-12 w-64 z-50 bg-white shadow-lg border border-gray-200">
           <CardHeader>
             <CardTitle className="text-lg">Account</CardTitle>
           </CardHeader>

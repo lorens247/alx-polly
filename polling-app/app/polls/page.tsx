@@ -4,105 +4,159 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { PollCard } from "@/components/polls/poll-card"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/contexts/auth-context"
 
-// Mock data for demonstration
-const mockPolls = [
-  {
-    id: "1",
-    title: "What's your favorite programming language?",
-    description: "Vote for the programming language you enjoy working with the most",
-    options: [
-      { id: "1-1", text: "JavaScript/TypeScript", votes: 45 },
-      { id: "1-2", text: "Python", votes: 38 },
-      { id: "1-3", text: "Java", votes: 22 },
-      { id: "1-4", text: "C++", votes: 15 }
-    ],
-    totalVotes: 120,
-    createdAt: "2024-01-15T10:00:00Z",
-    expiresAt: "2024-02-15T10:00:00Z",
-    isActive: true
-  },
-  {
-    id: "2",
-    title: "Which framework should we use for the next project?",
-    description: "Help us decide on the best framework for our upcoming web application",
-    options: [
-      { id: "2-1", text: "Next.js", votes: 28 },
-      { id: "2-2", text: "React", votes: 25 },
-      { id: "2-3", text: "Vue.js", votes: 18 },
-      { id: "2-4", text: "Angular", votes: 12 }
-    ],
-    totalVotes: 83,
-    createdAt: "2024-01-14T14:30:00Z",
-    isActive: true
-  },
-  {
-    id: "3",
-    title: "What's your preferred database for web apps?",
-    description: "Choose the database technology you're most comfortable with",
-    options: [
-      { id: "3-1", text: "PostgreSQL", votes: 35 },
-      { id: "3-2", text: "MongoDB", votes: 28 },
-      { id: "3-3", text: "MySQL", votes: 20 },
-      { id: "3-4", text: "SQLite", votes: 12 }
-    ],
-    totalVotes: 95,
-    createdAt: "2024-01-13T09:15:00Z",
-    isActive: true
-  },
-  {
-    id: "4",
-    title: "Which cloud platform do you prefer?",
-    description: "Select your favorite cloud hosting platform",
-    options: [
-      { id: "4-1", text: "AWS", votes: 42 },
-      { id: "4-2", text: "Google Cloud", votes: 25 },
-      { id: "4-3", text: "Azure", votes: 20 },
-      { id: "4-4", text: "Vercel", votes: 18 }
-    ],
-    totalVotes: 105,
-    createdAt: "2024-01-12T16:45:00Z",
-    isActive: true
-  }
-]
+// Types for our poll data
+interface PollOption {
+  id: string
+  text: string
+  votes: number
+}
+
+interface Poll {
+  id: string
+  title: string
+  description: string
+  options: PollOption[]
+  totalVotes: number
+  createdAt: string
+  expiresAt?: string
+  isActive: boolean
+  createdBy: string
+}
 
 export default function PollsPage() {
-  const [polls, setPolls] = useState(mockPolls)
-  const [isLoading, setIsLoading] = useState(false)
+  const [polls, setPolls] = useState<Poll[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState("all") // all, active, closed
+  const { user } = useAuth()
+
+  // Fetch polls from Supabase
+  const fetchPolls = async () => {
+    try {
+      setIsLoading(true)
+      
+      // Fetch polls with their options and vote counts
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('polls')
+        .select(`
+          id,
+          title,
+          description,
+          status,
+          expires_at,
+          created_at,
+          created_by,
+          poll_options (
+            id,
+            text,
+            order_index
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (pollsError) {
+        console.error('Error fetching polls:', pollsError)
+        return
+      }
+
+      // Fetch vote counts for each poll
+      const { data: votesData, error: votesError } = await supabase
+        .from('votes')
+        .select('poll_id, option_id')
+
+      if (votesError) {
+        console.error('Error fetching votes:', votesError)
+        return
+      }
+
+      // Process the data to match our Poll interface
+      const processedPolls: Poll[] = pollsData?.map(poll => {
+        const pollVotes = votesData?.filter(vote => vote.poll_id === poll.id) || []
+        const optionVoteCounts = pollVotes.reduce((acc, vote) => {
+          acc[vote.option_id] = (acc[vote.option_id] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        const options: PollOption[] = poll.poll_options
+          ?.sort((a, b) => a.order_index - b.order_index)
+          .map(option => ({
+            id: option.id,
+            text: option.text,
+            votes: optionVoteCounts[option.id] || 0
+          })) || []
+
+        const totalVotes = options.reduce((sum, option) => sum + option.votes, 0)
+        const isActive = poll.status === 'active' && 
+          (!poll.expires_at || new Date(poll.expires_at) > new Date())
+
+        return {
+          id: poll.id,
+          title: poll.title,
+          description: poll.description || '',
+          options,
+          totalVotes,
+          createdAt: poll.created_at,
+          expiresAt: poll.expires_at || undefined,
+          isActive,
+          createdBy: poll.created_by
+        }
+      }) || []
+
+      setPolls(processedPolls)
+    } catch (error) {
+      console.error('Error fetching polls:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPolls()
+  }, [])
 
   const handleVote = async (pollId: string, optionId: string) => {
-    console.log(`Voting for option ${optionId} in poll ${pollId}`)
-    
-    // Optimized vote update with better performance and readability
-    setPolls(prevPolls => {
-      // Early validation - return unchanged if poll/option not found
-      const pollIndex = prevPolls.findIndex(poll => poll.id === pollId)
-      if (pollIndex === -1) return prevPolls
-      
-      const poll = prevPolls[pollIndex]
-      const optionIndex = poll.options.findIndex(option => option.id === optionId)
-      if (optionIndex === -1) return prevPolls
-      
-      // Create immutable update with minimal object creation
-      const newPolls = [...prevPolls]
-      const newOptions = [...poll.options]
-      
-      // Update only the specific option that was voted for
-      newOptions[optionIndex] = { 
-        ...newOptions[optionIndex], 
-        votes: newOptions[optionIndex].votes + 1 
+    if (!user) {
+      alert('Please log in to vote')
+      return
+    }
+
+    try {
+      // Check if user has already voted on this poll
+      const { data: existingVote } = await supabase
+        .from('votes')
+        .select('id')
+        .eq('poll_id', pollId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (existingVote) {
+        alert('You have already voted on this poll')
+        return
       }
-      
-      // Update only the specific poll that was voted on
-      newPolls[pollIndex] = {
-        ...poll,
-        options: newOptions,
-        totalVotes: poll.totalVotes + 1
+
+      // Insert the vote
+      const { error } = await supabase
+        .from('votes')
+        .insert({
+          poll_id: pollId,
+          option_id: optionId,
+          user_id: user.id
+        })
+
+      if (error) {
+        console.error('Error voting:', error)
+        alert('Failed to vote. Please try again.')
+        return
       }
-      
-      return newPolls
-    })
+
+      // Refresh polls to show updated vote counts
+      await fetchPolls()
+    } catch (error) {
+      console.error('Error voting:', error)
+      alert('Failed to vote. Please try again.')
+    }
   }
 
   const filteredPolls = polls.filter(poll => {
@@ -171,7 +225,12 @@ export default function PollsPage() {
         </div>
 
         {/* Polls Grid */}
-        {filteredPolls.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span className="ml-4 text-lg text-gray-600">Loading polls...</span>
+          </div>
+        ) : filteredPolls.length === 0 ? (
           <Card className="card-gradient max-w-2xl mx-auto">
             <CardContent className="py-16 text-center">
               <div className="text-6xl mb-4">📊</div>
