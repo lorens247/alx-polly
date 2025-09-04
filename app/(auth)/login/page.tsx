@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { login } from '@/app/lib/actions/auth-actions';
+import CSRFToken from '@/app/components/CSRFToken';
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export default function LoginPage() {
               />
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
+            <CSRFToken />
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Logging in...' : 'Login'}
             </Button>

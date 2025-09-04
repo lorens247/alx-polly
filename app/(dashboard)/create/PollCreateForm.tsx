@@ -5,6 +5,7 @@ import { createPoll } from "@/app/lib/actions/poll-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import CSRFToken from "@/app/components/CSRFToken";
 
 export default function PollCreateForm() {
   const [options, setOptions] = useState(["", ""]);
@@ -66,6 +67,7 @@ export default function PollCreateForm() {
       </div>
       {error && <div className="text-red-500">{error}</div>}
       {success && <div className="text-green-600">Poll created! Redirecting...</div>}
+      <CSRFToken />
       <Button type="submit">Create Poll</Button>
     </form>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { deletePoll } from "@/app/lib/actions/poll-actions";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/app/lib/context/auth-context";
 
 interface Poll {
   id: string;
@@ -24,10 +26,32 @@ export default function AdminPage() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
+    checkAdminAccess();
+  }, [user]);
+
+  const checkAdminAccess = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    
+    // Check if user has admin role
+    const userRole = user.user_metadata?.role;
+    if (userRole !== 'admin') {
+      setAccessDenied(true);
+      setLoading(false);
+      return;
+    }
+    
+    setIsAdmin(true);
     fetchAllPolls();
-  }, []);
+  };
 
   const fetchAllPolls = async () => {
     const supabase = createClient();
@@ -55,7 +79,28 @@ export default function AdminPage() {
   };
 
   if (loading) {
-    return <div className="p-6">Loading all polls...</div>;
+    return <div className="p-6">Loading...</div>;
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600">You do not have admin privileges to access this page.</p>
+          <Button 
+            onClick={() => router.push('/polls')} 
+            className="mt-4"
+          >
+            Return to Polls
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <div className="p-6">Loading...</div>;
   }
 
   return (
@@ -77,20 +122,11 @@ export default function AdminPage() {
                   <CardDescription>
                     <div className="space-y-1 mt-2">
                       <div>
-                        Poll ID:{" "}
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
-                          {poll.id}
-                        </code>
-                      </div>
-                      <div>
-                        Owner ID:{" "}
-                        <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
-                          {poll.user_id}
-                        </code>
-                      </div>
-                      <div>
                         Created:{" "}
                         {new Date(poll.created_at).toLocaleDateString()}
+                      </div>
+                      <div>
+                        Options: {poll.options.length}
                       </div>
                     </div>
                   </CardDescription>

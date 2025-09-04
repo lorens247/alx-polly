@@ -2,16 +2,31 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { validateAndSanitizePoll, voteSchema } from "@/app/lib/validations/schemas";
+import { requireCSRFToken } from "@/app/lib/utils/csrf";
 
 // CREATE POLL
 export async function createPoll(formData: FormData) {
   const supabase = await createClient();
 
+  // Validate CSRF token
+  const isValidCSRF = await requireCSRFToken(formData);
+  if (!isValidCSRF) {
+    return { error: "Invalid request. Please try again." };
+  }
+
   const question = formData.get("question") as string;
   const options = formData.getAll("options").filter(Boolean) as string[];
 
-  if (!question || options.length < 2) {
-    return { error: "Please provide a question and at least two options." };
+  try {
+    // Validate and sanitize input
+    const validatedData = validateAndSanitizePoll({ question, options });
+    
+    if (!validatedData.question || validatedData.options.length < 2) {
+      return { error: "Please provide a question and at least two options." };
+    }
+  } catch (error: any) {
+    return { error: error.errors?.[0]?.message || "Invalid input data" };
   }
 
   // Get user from session
@@ -29,8 +44,8 @@ export async function createPoll(formData: FormData) {
   const { error } = await supabase.from("polls").insert([
     {
       user_id: user.id,
-      question,
-      options,
+      question: validatedData.question,
+      options: validatedData.options,
     },
   ]);
 
@@ -76,12 +91,31 @@ export async function getPollById(id: string) {
 // SUBMIT VOTE
 export async function submitVote(pollId: string, optionIndex: number) {
   const supabase = await createClient();
+  
+  try {
+    // Validate input
+    voteSchema.parse({ pollId, optionIndex });
+  } catch (error: any) {
+    return { error: error.errors?.[0]?.message || "Invalid vote data" };
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Optionally require login to vote
-  // if (!user) return { error: 'You must be logged in to vote.' };
+  // Check if user already voted on this poll
+  if (user) {
+    const { data: existingVote } = await supabase
+      .from("votes")
+      .select("id")
+      .eq("poll_id", pollId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (existingVote) {
+      return { error: "You have already voted on this poll." };
+    }
+  }
 
   const { error } = await supabase.from("votes").insert([
     {
@@ -98,7 +132,26 @@ export async function submitVote(pollId: string, optionIndex: number) {
 // DELETE POLL
 export async function deletePoll(id: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("polls").delete().eq("id", id);
+  
+  // Get user from session
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError) {
+    return { error: userError.message };
+  }
+  if (!user) {
+    return { error: "You must be logged in to delete a poll." };
+  }
+
+  // Only allow deleting polls owned by the user
+  const { error } = await supabase
+    .from("polls")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+    
   if (error) return { error: error.message };
   revalidatePath("/polls");
   return { error: null };
@@ -108,11 +161,24 @@ export async function deletePoll(id: string) {
 export async function updatePoll(pollId: string, formData: FormData) {
   const supabase = await createClient();
 
+  // Validate CSRF token
+  const isValidCSRF = await requireCSRFToken(formData);
+  if (!isValidCSRF) {
+    return { error: "Invalid request. Please try again." };
+  }
+
   const question = formData.get("question") as string;
   const options = formData.getAll("options").filter(Boolean) as string[];
 
-  if (!question || options.length < 2) {
-    return { error: "Please provide a question and at least two options." };
+  try {
+    // Validate and sanitize input
+    const validatedData = validateAndSanitizePoll({ question, options });
+    
+    if (!validatedData.question || validatedData.options.length < 2) {
+      return { error: "Please provide a question and at least two options." };
+    }
+  } catch (error: any) {
+    return { error: error.errors?.[0]?.message || "Invalid input data" };
   }
 
   // Get user from session
@@ -130,7 +196,7 @@ export async function updatePoll(pollId: string, formData: FormData) {
   // Only allow updating polls owned by the user
   const { error } = await supabase
     .from("polls")
-    .update({ question, options })
+    .update({ question: validatedData.question, options: validatedData.options })
     .eq("id", pollId)
     .eq("user_id", user.id);
 

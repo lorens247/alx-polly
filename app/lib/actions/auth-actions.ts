@@ -2,9 +2,17 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { LoginFormData, RegisterFormData } from '../types';
+import { loginSchema, registerSchema } from '@/app/lib/validations/schemas';
 
 export async function login(data: LoginFormData) {
   const supabase = await createClient();
+
+  try {
+    // Validate input
+    loginSchema.parse(data);
+  } catch (error: any) {
+    return { error: error.errors?.[0]?.message || "Invalid input data" };
+  }
 
   const { error } = await supabase.auth.signInWithPassword({
     email: data.email,
@@ -12,7 +20,7 @@ export async function login(data: LoginFormData) {
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: "Invalid email or password" }; // Generic error message
   }
 
   // Success: no error
@@ -21,6 +29,13 @@ export async function login(data: LoginFormData) {
 
 export async function register(data: RegisterFormData) {
   const supabase = await createClient();
+
+  try {
+    // Validate input
+    registerSchema.parse(data);
+  } catch (error: any) {
+    return { error: error.errors?.[0]?.message || "Invalid input data" };
+  }
 
   const { error } = await supabase.auth.signUp({
     email: data.email,
@@ -33,7 +48,7 @@ export async function register(data: RegisterFormData) {
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: "Registration failed. Please try again." }; // Generic error message
   }
 
   // Success: no error

@@ -5,6 +5,7 @@ import { updatePoll } from '@/app/lib/actions/poll-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import CSRFToken from '@/app/components/CSRFToken';
 
 export default function EditPollForm({ poll }: { poll: any }) {
   const [question, setQuestion] = useState(poll.question);
@@ -76,6 +77,7 @@ export default function EditPollForm({ poll }: { poll: any }) {
       </div>
       {error && <div className="text-red-500">{error}</div>}
       {success && <div className="text-green-600">Poll updated! Redirecting...</div>}
+      <CSRFToken />
       <Button type="submit">Update Poll</Button>
     </form>
   );
