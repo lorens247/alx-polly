@@ -18,9 +18,10 @@ export async function createPoll(formData: FormData) {
   const question = formData.get("question") as string;
   const options = formData.getAll("options").filter(Boolean) as string[];
 
+  let validatedData;
   try {
     // Validate and sanitize input
-    const validatedData = validateAndSanitizePoll({ question, options });
+    validatedData = validateAndSanitizePoll({ question, options });
     
     if (!validatedData.question || validatedData.options.length < 2) {
       return { error: "Please provide a question and at least two options." };
@@ -170,9 +171,10 @@ export async function updatePoll(pollId: string, formData: FormData) {
   const question = formData.get("question") as string;
   const options = formData.getAll("options").filter(Boolean) as string[];
 
+  let validatedData;
   try {
     // Validate and sanitize input
-    const validatedData = validateAndSanitizePoll({ question, options });
+    validatedData = validateAndSanitizePoll({ question, options });
     
     if (!validatedData.question || validatedData.options.length < 2) {
       return { error: "Please provide a question and at least two options." };
