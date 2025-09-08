@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface HeaderProps {
   user?: {
@@ -22,6 +24,7 @@ interface HeaderProps {
 }
 
 export function Header({ user }: HeaderProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const isAuthenticated = !!user;
 
@@ -45,7 +48,7 @@ export function Header({ user }: HeaderProps) {
                 href="/create" 
                 className={`text-slate-600 hover:text-slate-900 ${pathname === '/create' ? 'font-medium text-slate-900' : ''}`}
               >
-                Create Poll
+                {t('create_poll')}
               </Link>
             </>
           ) : (
@@ -67,10 +70,11 @@ export function Header({ user }: HeaderProps) {
         </nav>
         
         <div className="flex items-center space-x-4">
+          <LanguageSwitcher />
           {isAuthenticated ? (
             <>
               <Button asChild variant="outline" className="hidden md:inline-flex">
-                <Link href="/create">Create Poll</Link>
+                <Link href="/create">{t('create_poll')}</Link>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
