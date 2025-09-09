@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import type { User } from '@supabase/supabase-js';
 
 /**
  * Checks if the current user has admin privileges.
@@ -51,7 +52,7 @@ export async function isAdmin(): Promise<boolean> {
  * }
  * ```
  */
-export async function requireAdmin(): Promise<{ user: any; isAdmin: boolean }> {
+export async function requireAdmin(): Promise<{ user: User; isAdmin: boolean }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   

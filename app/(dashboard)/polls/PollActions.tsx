@@ -14,7 +14,7 @@ import { deletePoll } from "@/app/lib/actions/poll-actions";
 interface Poll {
   id: string;
   question: string;
-  options: any[];
+  options: Array<{ text: string; votes?: number; [key: string]: unknown }>;
   user_id: string;
 }
 

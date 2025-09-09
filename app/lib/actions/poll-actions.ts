@@ -54,8 +54,9 @@ export async function createPoll(formData: FormData) {
     if (!validatedData.question || validatedData.options.length < 2) {
       return { error: "Please provide a question and at least two options." };
     }
-  } catch (error: any) {
-    return { error: error.errors?.[0]?.message || "Invalid input data" };
+  } catch (error: unknown) {
+    const zodError = error as { errors?: Array<{ message: string }> };
+    return { error: zodError.errors?.[0]?.message || "Invalid input data" };
   }
 
   // Verify user authentication before allowing poll creation
@@ -198,8 +199,9 @@ export async function submitVote(pollId: string, optionIndex: number) {
   try {
     // Validate input data to ensure pollId is valid and optionIndex is within bounds
     voteSchema.parse({ pollId, optionIndex });
-  } catch (error: any) {
-    return { error: error.errors?.[0]?.message || "Invalid vote data" };
+  } catch (error: unknown) {
+    const zodError = error as { errors?: Array<{ message: string }> };
+    return { error: zodError.errors?.[0]?.message || "Invalid vote data" };
   }
 
   const {
@@ -328,8 +330,9 @@ export async function updatePoll(pollId: string, formData: FormData) {
     if (!validatedData.question || validatedData.options.length < 2) {
       return { error: "Please provide a question and at least two options." };
     }
-  } catch (error: any) {
-    return { error: error.errors?.[0]?.message || "Invalid input data" };
+  } catch (error: unknown) {
+    const zodError = error as { errors?: Array<{ message: string }> };
+    return { error: zodError.errors?.[0]?.message || "Invalid input data" };
   }
 
   // Verify user authentication before allowing update

@@ -146,7 +146,7 @@ export function sanitizeHtml(input: string): string {
  * }
  * ```
  */
-export function validateAndSanitizePoll(data: any) {
+export function validateAndSanitizePoll(data: { question: string; options: string[] }) {
   const validated = createPollSchema.parse(data);
   return {
     question: sanitizeHtml(validated.question),

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import CSRFToken from '@/app/components/CSRFToken';
 
-export default function EditPollForm({ poll }: { poll: any }) {
+export default function EditPollForm({ poll }: { poll: { id: string; question: string; options: string[] } }) {
   const [question, setQuestion] = useState(poll.question);
   const [options, setOptions] = useState<string[]>(poll.options || []);
   const [error, setError] = useState<string | null>(null);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { setCSRFToken } from '@/app/lib/utils/csrf';
 
 interface CSRFTokenProviderProps {
   children: React.ReactNode;

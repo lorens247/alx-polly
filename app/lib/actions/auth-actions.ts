@@ -30,8 +30,9 @@ export async function login(data: LoginFormData) {
   try {
     // Validate input against Zod schema to ensure data integrity
     loginSchema.parse(data);
-  } catch (error: any) {
-    return { error: error.errors?.[0]?.message || "Invalid input data" };
+  } catch (error: unknown) {
+    const zodError = error as { errors?: Array<{ message: string }> };
+    return { error: zodError.errors?.[0]?.message || "Invalid input data" };
   }
 
   // Attempt authentication with Supabase Auth
@@ -79,8 +80,9 @@ export async function register(data: RegisterFormData) {
   try {
     // Validate input against Zod schema to ensure data integrity and security
     registerSchema.parse(data);
-  } catch (error: any) {
-    return { error: error.errors?.[0]?.message || "Invalid input data" };
+  } catch (error: unknown) {
+    const zodError = error as { errors?: Array<{ message: string }> };
+    return { error: zodError.errors?.[0]?.message || "Invalid input data" };
   }
 
   // Create new user account with Supabase Auth

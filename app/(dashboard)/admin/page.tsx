@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,11 +31,7 @@ export default function AdminPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    checkAdminAccess();
-  }, [user]);
-
-  const checkAdminAccess = async () => {
+  const checkAdminAccess = useCallback(async () => {
     if (!user) {
       router.push('/login');
       return;
@@ -51,7 +47,11 @@ export default function AdminPage() {
     
     setIsAdmin(true);
     fetchAllPolls();
-  };
+  }, [user, router]);
+
+  useEffect(() => {
+    checkAdminAccess();
+  }, [checkAdminAccess]);
 
   const fetchAllPolls = async () => {
     const supabase = createClient();

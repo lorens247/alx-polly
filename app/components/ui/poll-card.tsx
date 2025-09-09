@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Poll } from '@/app/lib/types';
 
 /**
  * Props interface for the PollCard component.
@@ -13,7 +12,7 @@ interface PollCardProps {
     id: string;
     title: string;
     description?: string;
-    options: any[];
+    options: Array<{ votes?: number; text?: string; [key: string]: unknown }>;
     votes?: number;
     createdAt: string | Date;
   };

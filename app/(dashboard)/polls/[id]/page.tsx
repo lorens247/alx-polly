@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { getPollById, submitVote } from '@/app/lib/actions/poll-actions';
 import { useAuth } from '@/app/lib/context/auth-context';
 
@@ -26,11 +26,7 @@ export default function PollDetailPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    fetchPoll();
-  }, [params.id]);
-
-  const fetchPoll = async () => {
+  const fetchPoll = useCallback(async () => {
     try {
       const { poll: pollData, error: pollError } = await getPollById(params.id);
       if (pollError || !pollData) {
@@ -39,12 +35,16 @@ export default function PollDetailPage({ params }: { params: { id: string } }) {
         return;
       }
       setPoll(pollData);
-    } catch (err) {
+    } catch {
       setError('Failed to load poll');
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchPoll();
+  }, [fetchPoll]);
   const handleVote = async () => {
     if (selectedOption === null || !poll) return;
     
@@ -59,7 +59,7 @@ export default function PollDetailPage({ params }: { params: { id: string } }) {
         // Refresh poll data to show updated results
         await fetchPoll();
       }
-    } catch (err) {
+    } catch {
       setError('Failed to submit vote');
     } finally {
       setIsSubmitting(false);
